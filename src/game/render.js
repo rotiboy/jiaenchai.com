@@ -114,7 +114,12 @@ export function initRenderer(canvasEl) {
   return ctx;
 }
 
-export function resizeCanvas(canvasEl) {
+/**
+ * Letterbox the picture into its host box.
+ * @param {HTMLCanvasElement} canvasEl
+ * @param {{fill?: boolean}} [opts] `fill` drops the whole-number scale snap.
+ */
+export function resizeCanvas(canvasEl, opts) {
   if (!canvasEl || typeof window === 'undefined') return 1;
   const parent = canvasEl.parentElement;
   const availW = Math.max(160, (parent && parent.clientWidth) || window.innerWidth || VIEW_W);
@@ -124,7 +129,13 @@ export function resizeCanvas(canvasEl) {
   const parentH = parent && parent.clientHeight > 0 ? parent.clientHeight : 0;
   const availH = Math.max(120, parentH || (window.innerHeight || VIEW_H) * 0.82);
   let scale = Math.min(availW / VIEW_W, availH / VIEW_H);
-  scale = scale >= 1 ? Math.max(1, Math.floor(scale)) : Math.max(0.25, Math.round(scale * 100) / 100);
+  // In the page the picture snaps to a whole multiple of 480×270 so every source
+  // pixel is exactly the same size. Fullscreen trades that for reach: a landscape
+  // phone fits about 1.44×, and flooring that to 1× would leave a postage stamp
+  // in the middle of the screen the player just asked to fill. Below 1× the
+  // fractional path is the only option anyway, so this is the same compromise.
+  if (!(opts && opts.fill) && scale >= 1) scale = Math.max(1, Math.floor(scale));
+  else scale = Math.max(0.25, Math.round(scale * 100) / 100);
   const w = Math.round(VIEW_W * scale);
   // Derive the height from the rounded width so the CSS box stays exactly 16:9.
   // Rounding both independently produces e.g. 350×197 (1.777 → 1.7766), which

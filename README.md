@@ -59,7 +59,12 @@ npm test        # physics self-test, level validation, headless playthrough, DOM
 
 Move ←/→ or A/D · Jump ↑/W/Space/Z · Drop through ↓/S · Dash Shift/X · Talk E/↑ · Pause Esc/P.
 Click or tap the screen to hand it the keyboard. On touch devices a D-pad and A/B buttons appear
-beneath the screen.
+beneath the screen: ▲ talks to people and advances dialogue, A jumps, B dashes.
+
+A **Fullscreen** switch sits under the cabinet. It pins the cabinet over the viewport and, where
+the browser supports it, asks for real fullscreen too — iOS Safari has no element fullscreen, so
+the CSS-only mode carries it there. Portrait stacks an enlarged D-pad under the picture; landscape
+floats it over. Fullscreen drops the integer-scale snap so the picture actually fills the screen.
 
 ## Deployment
 

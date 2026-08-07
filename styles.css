@@ -532,6 +532,146 @@ h2 {
 }
 #touch-controls:empty { display: none; }
 
+/* ---- Fullscreen ------------------------------------------------------------
+   main.js puts `cq-fs` on <body> and, where the API exists, also asks the
+   browser for real fullscreen on .cabinet. Both end up here: the cabinet is
+   pinned over the viewport, the chrome around it is stripped, and the picture
+   takes every pixel that is left after the D-pad. iOS Safari has no element
+   fullscreen, so this class is the whole feature there — it must stand alone. */
+
+body.cq-fs { overflow: hidden; }
+
+/* Everything the cabinet is covering is also removed from the tab order and
+   from the scroll, so a fullscreen player cannot fall out of the game. */
+body.cq-fs .skip-link,
+body.cq-fs .topbar,
+body.cq-fs .hero__head,
+body.cq-fs .chapters,
+body.cq-fs .section,
+body.cq-fs .footer,
+body.cq-fs .cabinet__bezel,
+body.cq-fs .cabinet__cap,
+body.cq-fs .cabinet__hint,
+body.cq-fs::before { display: none; }
+
+/* With everything else gone, collapsing the hero's padding leaves the document
+   barely a pixel tall — belt and braces against iOS Safari, which does not
+   always honour `overflow: hidden` on <body>. */
+body.cq-fs .hero { padding-block: 0; }
+
+body.cq-fs .cabinet {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  background: #05070a;
+  padding:
+    env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px)
+    env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+}
+body.cq-fs .cabinet::before { display: none; }
+
+body.cq-fs .cabinet__glass {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: #05070a;
+  box-shadow: none;
+}
+
+/* The screen keeps its 16:9 shape rather than swallowing the whole column. On a
+   portrait phone the picture is limited by width — a 390px viewport can only
+   ever be 219px of picture — so letting .screen grow would just bank 400px of
+   black bar. Capping it hands that height to the D-pad instead. In landscape
+   max-height takes over and the picture fills the viewport. */
+body.cq-fs .screen {
+  flex: 0 1 auto;
+  width: 100%;
+  height: auto;
+  max-height: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* The sound and fullscreen switches stay reachable (WCAG 1.4.2 / no trap),
+   floated over the top-right corner of the picture rather than under it. */
+body.cq-fs .cabinet__tools {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.6rem;
+  z-index: 3;
+  margin: 0;
+  gap: 0.4rem;
+}
+body.cq-fs .switch {
+  font-size: 0.625rem;
+  padding: 0.3rem 0.7rem;
+  background: rgba(6, 8, 12, 0.78);
+  backdrop-filter: blur(4px);
+}
+
+body.cq-fs #touch-controls {
+  flex: none;
+  margin: 0;
+  padding: 0 clamp(0.5rem, 3vw, 1.5rem);
+}
+
+/* Portrait phone: the space the 16:9 cap freed up goes to the controls, which
+   grow with it. This is the layout the fullscreen switch exists for. */
+@media (orientation: portrait) and (pointer: coarse) {
+  /* The controls keep their natural height at the bottom of the phone and the
+     glass takes the rest, which centres the picture in the space above them.
+     Widths are viewport-relative so the pad and the A/B pair always fit on one
+     row — a capped pixel size overflows and pushes A off a narrow screen. */
+  body.cq-fs #cq-touch {
+    min-height: 0;
+    padding: 44px 0 max(24px, env(safe-area-inset-bottom, 0px));
+  }
+  body.cq-fs #cq-touch .cq-pad { width: min(40vw, 200px); height: min(40vw, 200px); }
+  body.cq-fs #cq-touch .cq-round {
+    width: min(19vw, 88px);
+    height: min(19vw, 88px);
+    font-size: min(5.5vw, 26px);
+  }
+  body.cq-fs #cq-touch .cq-b { margin-bottom: min(8vw, 34px); }
+  body.cq-fs #cq-touch .cq-pause { width: 54px; height: 38px; }
+}
+
+/* Landscape on a phone has no vertical room to stack the pad under the picture,
+   so the controls float over it instead. #cq-touch is already pointer-events:
+   none apart from the buttons themselves, so the picture stays untouched. */
+@media (orientation: landscape) and (pointer: coarse) {
+  body.cq-fs #touch-controls {
+    position: absolute;
+    inset: auto 0 0 0;
+    z-index: 2;
+  }
+  body.cq-fs #cq-touch {
+    padding: 0 0 max(6px, env(safe-area-inset-bottom, 0px));
+    min-height: 0;
+  }
+  body.cq-fs #cq-touch .cq-pad { width: 128px; height: 128px; }
+  body.cq-fs #cq-touch .cq-round { width: 58px; height: 58px; font-size: 18px; }
+  body.cq-fs #cq-touch .cq-b { margin-bottom: 22px; }
+  /* Top-right belongs to the sound/fullscreen switches now; drop pause into the
+     gap between the pad and the A/B pair rather than the middle of the picture. */
+  body.cq-fs #cq-touch .cq-pause {
+    top: auto;
+    bottom: 0;
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+}
+
 /* ---- Chapter rail --------------------------------------------------------- */
 
 .chapters {

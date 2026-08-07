@@ -51,9 +51,12 @@ const BINDINGS = {
   KeyP: ['pause'],
 };
 
-// On-screen buttons carry a single action name; the A button doubles as the
-// menu confirm, exactly like Space/Enter on a keyboard.
-const TOUCH_EXTRA = { jump: ['confirm'] };
+// On-screen buttons carry a single action name; the extras mirror the keyboard
+// so no binding is reachable by keys alone. A doubles as the menu confirm,
+// exactly like Space/Enter. D-pad up doubles as `action` the way ArrowUp does —
+// without it there is no way to talk to an NPC on a touch device at all, since
+// nothing in the game reads bare `up`.
+const TOUCH_EXTRA = { jump: ['confirm'], up: ['action'] };
 
 // Fallback for browsers/layouts where KeyboardEvent.code is unavailable.
 const KEY_FALLBACK = {
@@ -87,6 +90,7 @@ let started = false;
 let touchRoot = null;
 let coarseQuery = null;
 let canvasRef = null;
+let touchActive = false;
 
 /**
  * Attach listeners and build the on-screen touch controls.
@@ -122,6 +126,16 @@ export function initInput(canvasEl) {
 
   buildTouchControls();
   refreshTouchVisibility();
+}
+
+/**
+ * True while the on-screen D-pad is the visible control surface, i.e. on a
+ * coarse pointer. Callers use it to label prompts with the button a player can
+ * actually see rather than with a key they do not have.
+ * @returns {boolean}
+ */
+export function touchControlsActive() {
+  return touchActive;
 }
 
 /** Clears the edge-triggered flags. Call once at the end of every frame. */
@@ -297,7 +311,7 @@ function buildTouchControls() {
 
   const pad = document.createElement('div');
   pad.className = 'cq-pad';
-  pad.appendChild(mkBtn('up', '▲', 'cq-up', 'Up'));
+  pad.appendChild(mkBtn('up', '▲', 'cq-up', 'Up — talk to people'));
   pad.appendChild(mkBtn('left', '◀', 'cq-left', 'Left'));
   pad.appendChild(mkBtn('right', '▶', 'cq-right', 'Right'));
   pad.appendChild(mkBtn('down', '▼', 'cq-dn', 'Down'));
@@ -351,6 +365,7 @@ function refreshTouchVisibility() {
   } catch (_) {
     coarse = false;
   }
+  touchActive = coarse;
   touchRoot.classList.toggle('cq-on', coarse);
   touchRoot.setAttribute('aria-hidden', coarse ? 'false' : 'true');
   if (!coarse) {

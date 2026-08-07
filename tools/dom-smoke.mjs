@@ -144,6 +144,32 @@ class ElementStub {
   }
   querySelector() { return null; }
   querySelectorAll() { return []; }
+  matches(sel) { return matchesSel(this, sel); }
+  contains(el) {
+    for (let n = el; n; n = n.parentElement) if (n === this) return true;
+    return false;
+  }
+  closest(sel) {
+    for (let n = this; n; n = n.parentElement) if (matchesSel(n, sel)) return n;
+    return null;
+  }
+}
+
+// Just enough selector support for the three shapes the source actually uses:
+// `.class`, `#id` and `[data-attr]`.
+function matchesSel(el, sel) {
+  if (!el || !sel) return false;
+  if (sel[0] === '.') return el.classList.contains(sel.slice(1));
+  if (sel[0] === '#') return el.id === sel.slice(1);
+  if (sel[0] === '[' && sel[sel.length - 1] === ']') {
+    const name = sel.slice(1, -1);
+    if (name.startsWith('data-')) {
+      const k = name.slice(5).replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+      return !!el.dataset && el.dataset[k] !== undefined;
+    }
+    return el.hasAttribute(name);
+  }
+  return el.tagName === sel.toUpperCase();
 }
 
 function emit(target, ev) {
@@ -180,15 +206,32 @@ canvasEl.id = 'game';
 canvasEl.width = 480;
 canvasEl.height = 270;
 const screenEl = new ElementStub('div');
+screenEl.classList.add('screen');
 screenEl.clientWidth = 960;
 screenEl.clientHeight = 540;
 screenEl.appendChild(canvasEl);
 byId.set('game', canvasEl);
 
+// The real page nests the canvas inside <figure class="cabinet">; main.js walks
+// up to it to pick the fullscreen host.
+const cabinetEl = new ElementStub('figure');
+cabinetEl.classList.add('cabinet');
+const glassEl = new ElementStub('div');
+glassEl.classList.add('cabinet__glass');
+glassEl.appendChild(screenEl);
+cabinetEl.appendChild(glassEl);
+documentStub.body.appendChild(cabinetEl);
+
 const touchMount = new ElementStub('div');
 touchMount.id = 'touch-controls';
 byId.set('touch-controls', touchMount);
-documentStub.body.appendChild(touchMount);
+cabinetEl.appendChild(touchMount);
+
+const fsBtnEl = new ElementStub('button');
+fsBtnEl.id = 'fullscreen-toggle';
+fsBtnEl.hidden = true;
+byId.set('fullscreen-toggle', fsBtnEl);
+cabinetEl.appendChild(fsBtnEl);
 
 /* ------------------------------------------------------------ window stub */
 
@@ -473,6 +516,41 @@ ok((drawCounts.get('fillRect') || 0) > 5000,
 ok((drawCounts.get('fillText') || 0) === 0,
   `no ctx.fillText was used (CONTRACT §5) — got ${drawCounts.get('fillText') || 0}`);
 
+// 3b) a touch player must be able to talk. Nothing in the game reads a bare
+// `up`, so if the D-pad's up button does not also raise `action` the NPCs —
+// and with them every line of career dialogue — are unreachable on a phone.
+{
+  function findAct(root, act) {
+    if (root.dataset && root.dataset.act === act) return root;
+    for (const child of root.children) {
+      const hit = findAct(child, act);
+      if (hit) return hit;
+    }
+    return null;
+  }
+
+  const padRoot = touchMount.children[0];
+  const upBtn = padRoot && findAct(padRoot, 'up');
+  ok(!!upBtn, 'the on-screen D-pad exposes an up button');
+
+  game.phase = 'playing';
+  game.dialogue = null;
+  game.nearNpc = { name: 'Delivery Lead', lines: ['Ship it.'], x: 0, y: 0, w: 8, h: 12 };
+  emit(padRoot, {
+    type: 'pointerdown', target: upBtn, pointerId: 77, clientX: 0, clientY: 0,
+    preventDefault() {}, stopPropagation() {},
+  });
+  pumpFrames(2, 16.7);
+  ok(game.phase === 'dialogue',
+    `the D-pad up button opens NPC dialogue on touch (phase=${game.phase})`);
+  emit(windowStub, { type: 'pointerup', target: upBtn, pointerId: 77 });
+  pumpFrames(2, 16.7);
+
+  game.dialogue = null;
+  game.nearNpc = null;
+  game.phase = 'playing';
+}
+
 // 4) pause menu round-trip
 keyDown('Escape', 'Escape');
 pumpFrames(2, 16.7);
@@ -539,6 +617,25 @@ documentStub.hidden = false;
 emit(documentStub, { type: 'visibilitychange' });
 pumpFrames(3, 16.7);
 ok(true, 'resize / visibilitychange handled');
+
+// 6b) fullscreen toggle. The stub has no Fullscreen API, which is exactly the
+// iOS Safari case: the CSS-only mode must carry the feature on its own.
+{
+  ok(fsBtnEl.hidden === false, 'the fullscreen switch is revealed once JS boots');
+  emit(fsBtnEl, { type: 'click', target: fsBtnEl, preventDefault() {} });
+  pumpFrames(2, 16.7);
+  ok(documentStub.body.classList.contains('cq-fs'),
+    'clicking the switch puts the page into fullscreen mode');
+  ok(fsBtnEl.getAttribute('aria-pressed') === 'true',
+    'the switch reports its pressed state to assistive tech');
+
+  emit(fsBtnEl, { type: 'click', target: fsBtnEl, preventDefault() {} });
+  pumpFrames(2, 16.7);
+  ok(!documentStub.body.classList.contains('cq-fs'),
+    'clicking it again returns the cabinet to the page');
+  ok(fsBtnEl.getAttribute('aria-pressed') === 'false',
+    'the switch reports the released state too');
+}
 
 // 7) progress persistence
 game.phase = 'playing';

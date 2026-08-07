@@ -163,7 +163,8 @@
         <div id="touch-controls"></div>
         <p class="cabinet__tools">
           <button id="sound-toggle" class="switch" type="button" aria-pressed="false" hidden>Sound off</button>
-          <span class="cabinet__hint">Click or tap the screen to play. Keys only reach the game while the screen is focused, so ↑ ↓ and Space always scroll this page.</span>
+          <button id="fullscreen-toggle" class="switch" type="button" aria-pressed="false" hidden>Fullscreen</button>
+          <span class="cabinet__hint">Click or tap the screen to play. Keys only reach the game while the screen is focused, so ↑ ↓ and Space always scroll this page. On a phone, <strong>Fullscreen</strong> hands the whole viewport to the cabinet.</span>
         </p>
         <figcaption class="cabinet__cap">
           Seven levels, one per chapter of the career. The game is entirely optional and decorative:
@@ -238,8 +239,15 @@
             <h3 id="touch-title" class="legend__title">Touch</h3>
             <p>
               On touch devices an on-screen D-pad and a pair of action buttons appear beneath the
-              screen automatically. The D-pad moves, drops through platforms and talks to people;
+              screen automatically. <strong>▲</strong> talks to people and advances dialogue,
+              <strong>◀ ▶</strong> move, <strong>▼</strong> drops through platforms;
               <strong>A</strong> jumps and <strong>B</strong> dashes once the ability has been earned.
+            </p>
+            <p class="note">
+              The <strong>Fullscreen</strong> switch under the cabinet gives the game the whole
+              viewport, which is the only comfortable way to play on a phone. It works in either
+              orientation — in landscape the D-pad floats over the picture. Leave it with the same
+              switch, <kbd>Esc</kbd>, or the browser's own exit gesture.
             </p>
             <p class="note">
               Abilities unlock as the career progresses: dash at Accenture, a double jump at the next

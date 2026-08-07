@@ -5,7 +5,7 @@
 // enhances the <canvas id="game">.
 
 import { VIEW_W, VIEW_H } from './engine/constants.js';
-import { input, initInput, endInputFrame } from './engine/input.js';
+import { input, initInput, endInputFrame, touchControlsActive } from './engine/input.js';
 import { startLoop } from './engine/loop.js';
 import {
   initAudio, playSfx, playMusic, stopMusic, setMuted, isMuted,
@@ -102,6 +102,125 @@ function initMuteButton() {
     if (!game.muted) music(currentMusic || 'title');
   });
   syncMuteButton();
+}
+
+/* ------------------------------------------------------------- fullscreen */
+
+/* The cabinet can take the whole viewport. On a phone that is not a flourish:
+   in the page flow the picture is a couple of hundred pixels tall with the
+   D-pad competing for the same column, which is close to unplayable.
+
+   Two mechanisms, tried in order:
+     1. The Fullscreen API on <figure class="cabinet">, which also sheds the
+        browser chrome.
+     2. A `cq-fs` class on <body> that pins the same element over the viewport.
+   iOS Safari has no element fullscreen at all, so (2) is not a fallback for
+   exotic browsers — it is the path most phones take. Both drive the same class,
+   so styles.css only ever has to describe one layout. */
+
+let fsBtn = null;
+let fsNative = false;   // true only while the browser's own fullscreen is engaged
+
+const cabinet = canvas && typeof canvas.closest === 'function'
+  ? canvas.closest('.cabinet')
+  : null;
+
+function fsElement() {
+  if (typeof document === 'undefined') return null;
+  return document.fullscreenElement || document.webkitFullscreenElement || null;
+}
+
+function fsActive() {
+  return !!(document.body && document.body.classList.contains('cq-fs'));
+}
+
+/** The single place the picture is re-measured, so the fullscreen fit is never missed. */
+function fitCanvas() {
+  try { resizeCanvas(canvas, { fill: fsActive() }); } catch (_) { /* no-op */ }
+}
+
+/** Re-measure now, and again once layout has settled (orientation, chrome, class flips). */
+function relayout() {
+  fitCanvas();
+  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(fitCanvas);
+}
+
+function syncFsButton(on) {
+  if (!fsBtn) return;
+  fsBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+  fsBtn.textContent = on ? 'Exit fullscreen' : 'Fullscreen';
+  fsBtn.setAttribute('title', on ? 'Put the game back in the page' : 'Fill the screen with the game');
+}
+
+function setFullscreen(on) {
+  if (!document.body) return;
+  document.body.classList.toggle('cq-fs', on);
+  syncFsButton(on);
+  relayout();
+  // Going fullscreen is a request to play, so hand the game the keyboard too.
+  if (on && canvas) {
+    try { canvas.focus({ preventScroll: true }); } catch (_) {
+      try { canvas.focus(); } catch (__) { /* no-op */ }
+    }
+  }
+}
+
+function toggleFullscreen() {
+  if (fsActive()) {
+    if (fsNative && fsElement()) {
+      const exit = document.exitFullscreen || document.webkitExitFullscreen;
+      if (exit) {
+        try {
+          const p = exit.call(document);
+          if (p && typeof p.catch === 'function') p.catch(() => { /* no-op */ });
+        } catch (_) { /* no-op */ }
+      }
+    }
+    fsNative = false;
+    setFullscreen(false);
+    return;
+  }
+
+  const host = cabinet || canvas;
+  const req = host && (host.requestFullscreen || host.webkitRequestFullscreen);
+  if (req) {
+    try {
+      const p = req.call(host, { navigationUI: 'hide' });
+      fsNative = true;
+      // A rejected request (iframe policy, a lost gesture) simply leaves the
+      // CSS-only mode standing, which is a perfectly good fullscreen.
+      if (p && typeof p.catch === 'function') p.catch(() => { fsNative = false; });
+    } catch (_) {
+      fsNative = false;
+    }
+  }
+  setFullscreen(true);
+}
+
+function onFsChange() {
+  // Esc, the Android back gesture and the browser's own exit affordance all
+  // leave native fullscreen without going through the button. Follow them out.
+  if (fsNative && !fsElement()) {
+    fsNative = false;
+    setFullscreen(false);
+  } else {
+    relayout();
+  }
+}
+
+function initFullscreenButton() {
+  fsBtn = typeof document !== 'undefined' ? document.getElementById('fullscreen-toggle') : null;
+  if (!fsBtn) return;
+  fsBtn.hidden = false;
+  fsBtn.addEventListener('click', toggleFullscreen);
+  syncFsButton(false);
+  document.addEventListener('fullscreenchange', onFsChange);
+  document.addEventListener('webkitfullscreenchange', onFsChange);
+  if (typeof window !== 'undefined' && window.screen && window.screen.orientation
+      && typeof window.screen.orientation.addEventListener === 'function') {
+    // Rotating a phone changes the picture box without always firing `resize`.
+    window.screen.orientation.addEventListener('change', relayout);
+  }
 }
 
 /* -------------------------------------------------------------- transitions */
@@ -331,7 +450,10 @@ function render() {
       const sx = Math.round(game.prompt.x - cam.x);
       const sy = Math.round(game.prompt.y - cam.y) - 12;
       if (sx > 8 && sx < VIEW_W - 8 && sy > 8 && sy < VIEW_H - 8) {
-        drawText(ctx, 'E  ' + game.prompt.text, sx, sy, {
+        // Name the control the player can actually see: a phone has no E key,
+        // it has the D-pad's up button.
+        const key = touchControlsActive() ? '^' : 'E';
+        drawText(ctx, key + '  ' + game.prompt.text, sx, sy, {
           align: 'center', color: '#63e0cf', shadow: true,
         });
       }
@@ -356,6 +478,7 @@ function boot() {
 
   initInput(canvas);
   initMuteButton();
+  initFullscreenButton();
 
   // Audio only ever starts from a gesture *on the cabinet itself*. A visitor
   // who clicks the "Résumé" nav link or taps a phone number must never be
@@ -371,9 +494,9 @@ function boot() {
   const touchMount = document.getElementById('touch-controls');
   if (touchMount) touchMount.addEventListener('pointerdown', gesture, { passive: true });
 
-  window.addEventListener('resize', () => resizeCanvas(canvas), { passive: true });
+  window.addEventListener('resize', fitCanvas, { passive: true });
   if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', () => resizeCanvas(canvas), { passive: true });
+    window.visualViewport.addEventListener('resize', fitCanvas, { passive: true });
   }
 
   // Focus the canvas when the player clicks it so keys reach the game.

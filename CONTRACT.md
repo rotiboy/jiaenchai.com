@@ -150,12 +150,15 @@ above the platform top AND `body.dropTimer <= 0`.
 export const input = { left, right, up, down, jump, dash, action, pause,   // booleans
                        jumpPressed, dashPressed, actionPressed, pausePressed,  // edge-triggered
                        anyPressed };
-export function initInput(canvasEl)   // attaches listeners, sets up on-screen touch buttons
-export function endInputFrame()       // clears the *Pressed edges; called at end of each frame
+export function initInput(canvasEl)      // attaches listeners, sets up on-screen touch buttons
+export function endInputFrame()          // clears the *Pressed edges; called at end of each frame
+export function touchControlsActive()    // true on a coarse pointer, for labelling prompts
 ```
 Bindings: ←/→/A/D move, ↑/W/Space/Z jump, ↓/S drop, Shift/X dash, E/↑ action, Esc/P pause.
 Arrow keys and Space must `preventDefault()` so the page never scrolls.
 Touch: on-screen D-pad + A/B buttons, shown only when `matchMedia('(pointer: coarse)')`.
+Every binding must be reachable by touch: A doubles as menu confirm and D-pad up doubles as
+`action`, or NPC dialogue is unreachable on a phone (nothing in the game reads a bare `up`).
 
 ### `src/engine/loop.js`
 ```js
@@ -211,7 +214,7 @@ export const THEMES = { bristol:{...}, edinburgh:{...}, kl:{...}, hospital:{...}
 // render.js
 export function initRenderer(canvasEl)             // sizes canvas, returns ctx
 export function renderWorld(ctx, game, cam, alpha) // sky, parallax, tiles, entities, player, particles
-export function resizeCanvas(canvasEl)             // integer-scale letterbox to fit window
+export function resizeCanvas(canvasEl, opts)       // letterbox to fit; {fill:true} drops the integer snap
 ```
 Art direction: crisp 16-bit pixel look, limited palette per theme, 3 parallax layers per theme
 that reflect the place (Bristol: Clifton bridge + Suspension valley; Edinburgh: castle rock,
@@ -390,5 +393,11 @@ Further Mathematics (A) (2012–2013)
   Twitter card, `application/ld+json` `Person` + `ProfilePage` schema.
 - Inline SVG favicon via data URI. No external fonts, no external requests at all.
 - Responsive: canvas scales down on mobile; touch controls appear on coarse pointers.
+- A **fullscreen switch** beside the sound switch. It adds `cq-fs` to `<body>`, which pins
+  `.cabinet` over the viewport, and asks the Fullscreen API for `.cabinet` where that exists.
+  iOS Safari has no element fullscreen, so the class alone must carry the feature. Fullscreen
+  drops the integer-scale snap (`resizeCanvas(canvas, {fill:true})`) so the picture actually
+  fills the screen; portrait stacks a large D-pad under the picture and landscape floats it
+  over. The sound switch stays reachable in both.
 - `prefers-reduced-motion`: disable page-level animation (the game itself still runs).
 - A "Skip to résumé" link as the first focusable element.
