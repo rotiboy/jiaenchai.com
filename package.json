@@ -1,0 +1,15 @@
+{
+  "name": "career-quest",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Career Quest: The Chai Jia En Story — a zero-dependency 2D platformer portfolio.",
+  "scripts": {
+    "test": "node tools/physics-selftest.mjs && node tools/validate-levels.mjs && node tools/headless-play.mjs && node tools/dom-smoke.mjs",
+    "dev": "node tools/serve.mjs",
+    "selftest": "node tools/physics-selftest.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

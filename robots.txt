@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# Nothing here is private; the résumé is the point.
+Sitemap: https://jiaenchai.com/sitemap.xml

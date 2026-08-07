@@ -1,0 +1,66 @@
+// Excelerate Asia / General Assembly Malaysia - Product Manager (OCT 2022 – JUL 2023)
+// Chapter 4 of Career Quest. Data only: no DOM, no imports.
+export const level = {
+  id: 'excelerate',
+  index: 4,
+  company: 'Excelerate Asia / General Assembly Malaysia',
+  role: 'Product Manager',
+  location: 'Kuala Lumpur',
+  period: 'OCT 2022 – JUL 2023',
+  theme: 'classroom',
+  tagline: 'Three industries, one hypothesis, and a pilot programme built end to end.',
+  unlocks: null,
+  unlockLabel: null,
+  collectibleName: 'Insight',
+  bullets: [
+    'Defined product roadmap and strategy in alignment with vision established by company leadership. This included creating product strategy documents that describe the business case, high-level use cases and technical requirements.',
+    'Conducted UX research with stakeholders across 3 industries to validate product hypotheses, ultimately resulting in a pilot program for the early stage of a learning experience platform.',
+    'Independently designed and implemented the pilot program end-to-end.',
+    'Managed UI/UX resource to deliver the product design prototype, including running regular product review sessions with company leadership.',
+  ],
+  npcs: [
+    {
+      name: 'Company Founder',
+      lines: [
+        'Here is the vision. Now go and write the strategy that survives contact with it.',
+        'Business case, high-level use cases, technical requirements. One document, no hand-waving.',
+        'I want a roadmap that says no to three things for every one it says yes to.',
+      ],
+    },
+    {
+      name: 'UX Researcher',
+      lines: [
+        'Three industries, three completely different definitions of the word learner.',
+        'A hypothesis is not validated until someone outside the building disagrees with it out loud.',
+        'Bring the prototype. People critique a screen far more honestly than they critique an idea.',
+      ],
+    },
+  ],
+  signs: [
+    'Product roadmap and strategy aligned to the vision set by company leadership: business case, high-level use cases, technical requirements.',
+    'Industry one. UX research run with stakeholders to validate the product hypotheses, not to confirm them.',
+    'Industry three. Enough signal to justify a pilot for the early stage of a learning experience platform.',
+  ],
+  rows: [
+    '..............................................................................................................................................................................##',
+    '...................................................................................................?..........................................................................##',
+    '..............................................................................................................................................................................##',
+    '..............................................................?.......................................................................o.oEo...................................##',
+    '.................................................................................................o..o...............................########..................................##',
+    '...............................................................................................########.......................No..............................................##',
+    '.............................................................oEo.o........................oE................................######.........................*..................##',
+    '...........................................................########.....................#####.........................o..................................#####................##',
+    '......................................................o...........................o.................................######.........F..............oE.o........................##',
+    '....................................................#####.......................======........................E.o................................######...........o...........##',
+    '...........................................................................o................................######..............................................######........##',
+    '...............................................oE.......................======................................................................................................##',
+    '.............................................#####....................................F.................................................................H.....F...............##',
+    '..................................................F............................V..............................................................................................##',
+    '..............?.........................o.....................................................................................................................................##',
+    '......................................#####....................................................................................................C.......................^^....G##',
+    '.............................................................................................................................................###################################',
+    '...P....o.o.....^^..N.....E..o.......C......^^....................o....###########################.......oC.............E....................###################################',
+    '################################....##############################################################....##########################################################################',
+    '################################~~~~##############################################################~~~~##########################################################################',
+  ],
+};

@@ -1,0 +1,31 @@
+# dependencies (there are none — this guard is here so a stray install is never committed)
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# build / deploy
+.vercel/
+dist/
+build/
+.cache/
+
+# environment
+.env
+.env.*
+!.env.example
+
+# editors & OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*~
+
+# logs & scratch
+*.log
+npm-debug.log*
+scratchpad/
+tmp/
+coverage/

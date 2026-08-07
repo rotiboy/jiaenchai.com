@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="Career Quest — the Chai Jia En story. Chai Jia En, Senior Product Manager, Kuala Lumpur, Malaysia.">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#101317"/>
+      <stop offset="1" stop-color="#08090b"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.06"/>
+      <stop offset="0.34" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#sky)"/>
+
+  <!-- pixel ground strip -->
+  <g fill="#14181d">
+    <rect x="0" y="546" width="1200" height="84"/>
+  </g>
+  <g fill="#1b2027">
+    <rect x="0" y="546" width="1200" height="6"/>
+  </g>
+  <g fill="#d9a441" opacity="0.9">
+    <rect x="72" y="522" width="24" height="24"/>
+    <rect x="120" y="498" width="24" height="24"/>
+    <rect x="168" y="474" width="24" height="24"/>
+  </g>
+
+  <!-- accent rule -->
+  <rect x="72" y="120" width="96" height="6" fill="#d9a441"/>
+
+  <text x="72" y="196" fill="#86847d" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="26" letter-spacing="6">CAREER QUEST — A PLAYABLE RESUME</text>
+
+  <text x="72" y="300" fill="#e9e7e2" font-family="Georgia, 'Times New Roman', serif" font-size="96" font-weight="700">Chai Jia En</text>
+
+  <text x="72" y="366" fill="#d9a441" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="34" letter-spacing="3">Senior Product Manager</text>
+
+  <text x="72" y="428" fill="#b4b2ab" font-family="Georgia, 'Times New Roman', serif" font-size="30">9 years across fintech, retail tech and digital transformation.</text>
+  <text x="72" y="472" fill="#b4b2ab" font-family="Georgia, 'Times New Roman', serif" font-size="30">Kuala Lumpur, Malaysia · jiaenchai.com</text>
+
+  <!-- cabinet vignette on the right -->
+  <g transform="translate(792 176)">
+    <rect x="0" y="0" width="336" height="216" rx="14" fill="#14181d" stroke="rgba(233,231,226,0.20)"/>
+    <rect x="14" y="14" width="308" height="173" rx="7" fill="#05070a"/>
+    <g fill="#d9a441" opacity="0.85">
+      <rect x="40" y="140" width="14" height="14"/>
+      <rect x="54" y="126" width="14" height="14"/>
+      <rect x="68" y="140" width="14" height="14"/>
+      <rect x="54" y="154" width="14" height="14"/>
+    </g>
+    <g fill="#63e0cf" opacity="0.8">
+      <rect x="160" y="112" width="12" height="12"/>
+      <rect x="212" y="88" width="12" height="12"/>
+      <rect x="256" y="132" width="12" height="12"/>
+    </g>
+    <rect x="14" y="160" width="308" height="27" fill="#0b0d10"/>
+    <rect x="14" y="14" width="308" height="173" rx="7" fill="url(#glass)"/>
+    <circle cx="30" cy="201" r="5" fill="#d9a441"/>
+    <text x="48" y="206" fill="#86847d" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" letter-spacing="3">480 × 270</text>
+  </g>
+</svg>
