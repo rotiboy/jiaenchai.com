@@ -637,6 +637,50 @@ ok(true, 'resize / visibilitychange handled');
     'the switch reports the released state too');
 }
 
+// 6c) a chapter that grants an ability spends the completion card's first page
+// on it, so the reward cannot be paged straight past without being seen.
+{
+  const ui = await import('../src/game/ui.js');
+  const st = await import('../src/game/state.js');
+
+  const withUnlock = st.LEVELS.findIndex((l) => l && l.unlocks);
+  const without = st.LEVELS.findIndex((l) => l && !l.unlocks);
+  ok(withUnlock >= 0 && without >= 0, 'the roster has both unlocking and plain chapters');
+
+  const probe = st.createGame();
+
+  st.loadLevel(probe, without);
+  const plainPages = ui.levelCompletePageCount(probe);
+  st.loadLevel(probe, withUnlock);
+  const unlockPages = ui.levelCompletePageCount(probe);
+
+  // Same bullet count either way would make this vacuous, so compare each
+  // chapter against its own bullet pagination rather than against each other.
+  const bulletsOnly = (lv) => {
+    const stub = st.createGame();
+    stub.level = Object.assign({}, lv, { unlocks: null });
+    return ui.levelCompletePageCount(stub);
+  };
+  ok(unlockPages === bulletsOnly(st.LEVELS[withUnlock]) + 1,
+    `an unlocking chapter adds one page for the ability (got ${unlockPages})`);
+  ok(plainPages === bulletsOnly(st.LEVELS[without]),
+    `a chapter with no unlock adds no page (got ${plainPages})`);
+
+  // And it renders, on both control surfaces.
+  const before = failures;
+  for (const touchMode of [false, true]) {
+    game.phase = 'levelComplete';
+    game.phaseT = 1.4;
+    game.level = st.LEVELS[withUnlock];
+    game.completePage = 0;
+    game.touchControls = touchMode;
+    if (!pumpFrames(3, 16.7)) break;
+  }
+  ok(failures === before, 'the ability page renders for keyboard and touch');
+  game.touchControls = false;
+  game.completePage = 0;
+}
+
 // 7) progress persistence
 game.phase = 'playing';
 game.save.maxLevel = 2;

@@ -10,6 +10,7 @@
 
 import { VIEW_W, VIEW_H } from '../engine/constants.js';
 import { GLYPH_W, GLYPH_H, glyphFor } from './font.js';
+import { drawPlayer, drawCompanion } from './sprites.js';
 
 /* ------------------------------------------------------------------ *
  * Palette
@@ -373,6 +374,54 @@ const ABILITY_BADGES = [
   { key: 'glide', letter: 'G' },
   { key: 'companion', letter: 'A' },
 ];
+
+/**
+ * What each ability actually does and how to fire it. A reward the player
+ * cannot name and cannot press is not a reward, so the completion card spells
+ * out both — in keys *and* in on-screen buttons, since a phone has neither a
+ * Shift nor an X. `anim` picks the player pose drawn alongside it.
+ */
+const ABILITY_INFO = {
+  dash: {
+    fallback: 'Dash',
+    what: 'Burst forward in a straight line — crosses gaps and spike beds that a plain jump cannot.',
+    keys: ['SHIFT', 'X'],
+    touch: 'B',
+    anim: 'dash',
+  },
+  doubleJump: {
+    fallback: 'Double Jump',
+    what: 'Press jump a second time in mid-air to reach ledges that are out of a single jump\'s range.',
+    keys: ['SPACE', 'W', 'Z'],
+    touch: 'A',
+    hint: 'Press it again while airborne.',
+    anim: 'jump',
+  },
+  glide: {
+    fallback: 'Glide',
+    what: 'Hold jump as you fall and the descent slows to a drift, carrying you much further across.',
+    keys: ['SPACE', 'W', 'Z'],
+    touch: 'A',
+    hint: 'Hold it down while falling.',
+    anim: 'glide',
+  },
+  companion: {
+    fallback: 'Companion Drone',
+    what: 'A drone tags along and pulls every collectible near it straight into your hands.',
+    keys: [],
+    touch: '',
+    hint: 'Always on — nothing to press.',
+    anim: 'idle',
+  },
+};
+
+/** The ability a chapter hands over on completion, or null. */
+function abilityFor(level) {
+  const key = level && level.unlocks;
+  const info = key ? ABILITY_INFO[key] : null;
+  if (!info) return null;
+  return { key, info, name: String(level.unlockLabel || info.fallback) };
+}
 
 /**
  * Hearts, collectible counter, chapter chip and timer.
@@ -869,12 +918,132 @@ function paginateRows(rows, pageH) {
  */
 export function levelCompletePageCount(game) {
   const level = (game && game.level) || {};
-  return paginateRows(buildBulletRows(level.bullets), LC_BODY_BOTTOM - LC_BODY_TOP).length;
+  const bullets = paginateRows(buildBulletRows(level.bullets), LC_BODY_BOTTOM - LC_BODY_TOP).length;
+  return bullets + (abilityFor(level) ? 1 : 0);
 }
 
 // Per-page reveal clock (reset whenever the page changes).
 let _lcPage = -1;
 let _lcT0 = 0;
+
+/**
+ * A bordered key cap, e.g. [SHIFT]. Returns the width consumed.
+ * @returns {number}
+ */
+function keyCap(ctx, x, y, label, color, alpha) {
+  const text = String(label).toUpperCase();
+  const tw = textWidth(text, 1, 1);
+  const w = tw + 11;
+  const h = 13;
+  const prev = ctx.globalAlpha;
+  ctx.globalAlpha = prev * clamp(num(alpha, 1), 0, 1);
+  rect(ctx, x, y, w, h, 'rgba(255,203,71,0.10)');
+  rect(ctx, x, y, w, 1, color);
+  rect(ctx, x, y + h - 1, w, 1, color);
+  rect(ctx, x, y + 1, 1, h - 2, color);
+  rect(ctx, x + w - 1, y + 1, 1, h - 2, color);
+  drawText(ctx, text, x + 6, y + 3, { color: INK });
+  ctx.globalAlpha = prev;
+  return w;
+}
+
+/** Lays out `[A] or [B] or [C]` centred on `cx`, returning nothing. */
+function keyCapRow(ctx, cx, y, caps, color, alpha) {
+  if (!caps.length) return;
+  const OR = 'OR';
+  const orW = textWidth(OR, 1, 1);
+  let total = 0;
+  for (let i = 0; i < caps.length; i++) {
+    total += textWidth(String(caps[i]).toUpperCase(), 1, 1) + 11;
+    if (i) total += orW + 12;
+  }
+  let x = Math.round(cx - total / 2);
+  for (let i = 0; i < caps.length; i++) {
+    if (i) {
+      drawText(ctx, OR, x + 6, y + 3, { color: DIM, alpha });
+      x += orW + 12;
+    }
+    x += keyCap(ctx, x, y, caps[i], color, alpha);
+  }
+}
+
+/**
+ * The reward page of the completion card. Shown before the résumé bullets
+ * whenever the chapter grants an ability, so the player has to page past it —
+ * a three-second toast over the header was too easy to miss entirely.
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {{key:string, info:object, name:string}} ability
+ * @param {number} time seconds since the card appeared
+ * @param {boolean} touch true when the on-screen pad is the control surface
+ */
+function drawAbilityPage(ctx, ability, time, touch) {
+  const { info, name } = ability;
+  const cx = VIEW_W / 2;
+  const left = LC_X + LC_PAD;
+  const inner = LC_W - LC_PAD * 2;
+  const rev = (delay) => ease(clamp((time - delay) / 0.3, 0, 1));
+
+  // Banner.
+  const bA = rev(0.05);
+  const label = 'ABILITY UNLOCKED';
+  const lw = textWidth(label, 2, 3);
+  drawText(ctx, label, cx, LC_Y + 16, {
+    align: 'center', scale: 2, color: GOLD, letterSpacing: 3, shadow: true, alpha: bA,
+  });
+  const prevA = ctx.globalAlpha;
+  ctx.globalAlpha = bA;
+  drawPixels(ctx, STAR_S, Math.round(cx - lw / 2 - 16), LC_Y + 20, 2, GOLD);
+  drawPixels(ctx, STAR_S, Math.round(cx + lw / 2 + 6), LC_Y + 20, 2, GOLD);
+  ctx.globalAlpha = prevA;
+
+  // The name the résumé gives it, as large as the card allows.
+  const upper = String(name).toUpperCase();
+  const nameScale = textWidth(upper, 3, 2) <= inner ? 3 : 2;
+  drawText(ctx, upper, cx, LC_Y + 46, {
+    align: 'center', scale: nameScale, color: INK, letterSpacing: 2, shadow: true, alpha: rev(0.24),
+  });
+
+  ctx.globalAlpha = rev(0.36);
+  rule(ctx, left + 40, LC_Y + 46 + GLYPH_H * nameScale + 8, inner - 80, PANEL_LINE);
+  ctx.globalAlpha = 1;
+
+  // The player performing it, blown up so the pose actually reads.
+  const stageY = LC_Y + 96;
+  const sA = rev(0.44);
+  if (sA > 0.02) {
+    const pa = ctx.globalAlpha;
+    ctx.globalAlpha = sA;
+    ctx.save();
+    ctx.translate(Math.round(cx - 15), stageY);
+    ctx.scale(3, 3);
+    if (ability.key === 'companion') drawCompanion(ctx, -9, -2, time);
+    drawPlayer(ctx, 0, 0, { facing: 1, anim: info.anim, t: time });
+    ctx.restore();
+    ctx.globalAlpha = pa;
+  }
+
+  // What it does.
+  drawText(ctx, String(info.what), cx, stageY + 56, {
+    align: 'center', color: SOFT, lineHeight: 11, maxWidth: inner - 40, alpha: rev(0.58),
+  });
+
+  // How to fire it. Sits high enough that a hint line underneath still clears
+  // the footer row.
+  const capY = LC_Y + LC_H - 52;
+  const caps = touch ? (info.touch ? [info.touch] : []) : info.keys.slice();
+  const cA = rev(0.74);
+  if (caps.length) {
+    drawText(ctx, touch ? 'TAP' : 'PRESS', cx, capY - 12, {
+      align: 'center', color: DIM, letterSpacing: 2, alpha: cA,
+    });
+    keyCapRow(ctx, cx, capY, caps, GOLD_DK, cA);
+  }
+  if (info.hint) {
+    drawText(ctx, String(info.hint), cx, capY + (caps.length ? 18 : 0), {
+      align: 'center', color: TEAL, alpha: cA,
+    });
+  }
+}
 
 /**
  * Completion card: stats row plus the verbatim résumé bullets, revealed line
@@ -890,8 +1059,11 @@ export function drawLevelComplete(ctx, game, t) {
 
   const rows = buildBulletRows(level.bullets);
   const pages = paginateRows(rows, LC_BODY_BOTTOM - LC_BODY_TOP);
+  // A chapter that grants an ability spends its first page on it.
+  const ability = abilityFor(level);
+  const totalPages = pages.length + (ability ? 1 : 0);
   const wanted = Math.floor(firstNum(g, ['completePage', 'resultPage', 'page', 'uiPage'], 0));
-  const page = clamp(wanted, 0, pages.length - 1);
+  const page = clamp(wanted, 0, totalPages - 1);
 
   if (page !== _lcPage || time < _lcT0) {
     _lcPage = page;
@@ -901,6 +1073,14 @@ export function drawLevelComplete(ctx, game, t) {
 
   scrim(ctx, 0.72);
   panel(ctx, LC_X, LC_Y, LC_W, LC_H, { accent: GOLD_DK });
+
+  const touch = !!g.touchControls;
+  if (ability && page === 0) {
+    drawAbilityPage(ctx, ability, pt, touch);
+    drawCompleteFooter(ctx, time, page, totalPages, pt > 0.95, touch);
+    return;
+  }
+  const bulletPage = ability ? page - 1 : page;
 
   const left = LC_X + LC_PAD;
   const right = LC_X + LC_W - LC_PAD;
@@ -956,7 +1136,7 @@ export function drawLevelComplete(ctx, game, t) {
   ctx.globalAlpha = 1;
 
   // Bullets.
-  const rowsOnPage = pages[page];
+  const rowsOnPage = pages[bulletPage];
   const revealStart = 0.34;
   const revealStep = 0.055;
 
@@ -997,17 +1177,25 @@ export function drawLevelComplete(ctx, game, t) {
     y += LC_ROW_H;
   }
 
-  // Footer.
-  const allShown = pt > revealStart + shown * revealStep + 0.16;
-  const more = page < pages.length - 1;
-  if (pages.length > 1) {
-    drawText(ctx, 'PAGE ' + (page + 1) + ' / ' + pages.length, left, LC_Y + LC_H - 13, {
+  drawCompleteFooter(ctx, time, page, totalPages, pt > revealStart + shown * revealStep + 0.16, touch);
+}
+
+/** Page counter and the blinking advance prompt, shared by every card page. */
+function drawCompleteFooter(ctx, time, page, total, allShown, touch) {
+  const left = LC_X + LC_PAD;
+  const right = LC_X + LC_W - LC_PAD;
+  const more = page < total - 1;
+
+  if (total > 1) {
+    drawText(ctx, 'PAGE ' + (page + 1) + ' / ' + total, left, LC_Y + LC_H - 13, {
       color: FAINT,
       letterSpacing: 1,
     });
   }
   if (allShown && blink(time, 1.05, 0.68)) {
-    drawText(ctx, more ? 'PRESS ENTER FOR MORE ▼' : 'PRESS ENTER TO CONTINUE ▶', right, LC_Y + LC_H - 13, {
+    // A phone has no Enter key; name the button that is actually on screen.
+    const verb = touch ? 'TAP A' : 'PRESS ENTER';
+    drawText(ctx, verb + (more ? ' FOR MORE ▼' : ' TO CONTINUE ▶'), right, LC_Y + LC_H - 13, {
       align: 'right',
       color: GOLD,
       letterSpacing: 1,

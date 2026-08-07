@@ -394,10 +394,11 @@ Further Mathematics (A) (2012–2013)
 - Inline SVG favicon via data URI. No external fonts, no external requests at all.
 - Responsive: canvas scales down on mobile; touch controls appear on coarse pointers.
 - A **fullscreen switch** beside the sound switch. It adds `cq-fs` to `<body>`, which pins
-  `.cabinet` over the viewport, and asks the Fullscreen API for `.cabinet` where that exists.
-  iOS Safari has no element fullscreen, so the class alone must carry the feature. Fullscreen
-  drops the integer-scale snap (`resizeCanvas(canvas, {fill:true})`) so the picture actually
-  fills the screen; portrait stacks a large D-pad under the picture and landscape floats it
-  over. The sound switch stays reachable in both.
+  `.cabinet` over the *browser viewport*. Do NOT use the Fullscreen API: taking over the display
+  is heavier than the ask and behaves differently on every platform (iOS Safari has no element
+  fullscreen at all). Fullscreen drops the integer-scale snap
+  (`resizeCanvas(canvas, {fill:true})`) so the picture actually fills the window; portrait stacks
+  a large D-pad under the picture and landscape floats it over. The sound switch stays reachable
+  in both.
 - `prefers-reduced-motion`: disable page-level animation (the game itself still runs).
 - A "Skip to résumé" link as the first focusable element.

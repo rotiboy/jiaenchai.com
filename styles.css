@@ -533,11 +533,11 @@ h2 {
 #touch-controls:empty { display: none; }
 
 /* ---- Fullscreen ------------------------------------------------------------
-   main.js puts `cq-fs` on <body> and, where the API exists, also asks the
-   browser for real fullscreen on .cabinet. Both end up here: the cabinet is
-   pinned over the viewport, the chrome around it is stripped, and the picture
-   takes every pixel that is left after the D-pad. iOS Safari has no element
-   fullscreen, so this class is the whole feature there — it must stand alone. */
+   main.js puts `cq-fs` on <body> and that is the entire mechanism — the
+   Fullscreen API is deliberately not used, so the browser keeps its chrome and
+   the behaviour is the same on every platform. The cabinet is pinned over the
+   viewport, the page around it is stripped, and the picture takes every pixel
+   left after the D-pad. */
 
 body.cq-fs { overflow: hidden; }
 

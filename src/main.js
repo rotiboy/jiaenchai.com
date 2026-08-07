@@ -18,7 +18,7 @@ import {
 } from './game/ui.js';
 import {
   createGame, loadLevel, restartLevel, updateGame, saveProgress,
-  setPhase, advanceLevel, advanceDialogue, openDialogue, showToast,
+  setPhase, advanceLevel, advanceDialogue, openDialogue,
   unlockedCount, pushSfx, LEVELS,
 } from './game/state.js';
 
@@ -106,29 +106,18 @@ function initMuteButton() {
 
 /* ------------------------------------------------------------- fullscreen */
 
-/* The cabinet can take the whole viewport. On a phone that is not a flourish:
-   in the page flow the picture is a couple of hundred pixels tall with the
-   D-pad competing for the same column, which is close to unplayable.
+/* The cabinet can take the whole browser viewport. On a phone that is not a
+   flourish: in the page flow the picture is a couple of hundred pixels tall
+   with the D-pad competing for the same column, which is close to unplayable.
 
-   Two mechanisms, tried in order:
-     1. The Fullscreen API on <figure class="cabinet">, which also sheds the
-        browser chrome.
-     2. A `cq-fs` class on <body> that pins the same element over the viewport.
-   iOS Safari has no element fullscreen at all, so (2) is not a fallback for
-   exotic browsers — it is the path most phones take. Both drive the same class,
-   so styles.css only ever has to describe one layout. */
+   This is deliberately *not* the Fullscreen API. Taking over the whole display
+   and hiding the browser's chrome is a heavier thing than the player asked for,
+   and it behaves differently on every platform (iOS Safari has no element
+   fullscreen at all). A `cq-fs` class on <body> pins .cabinet over the viewport
+   instead — same result inside the window, identical everywhere, and the tab
+   stays a tab. */
 
 let fsBtn = null;
-let fsNative = false;   // true only while the browser's own fullscreen is engaged
-
-const cabinet = canvas && typeof canvas.closest === 'function'
-  ? canvas.closest('.cabinet')
-  : null;
-
-function fsElement() {
-  if (typeof document === 'undefined') return null;
-  return document.fullscreenElement || document.webkitFullscreenElement || null;
-}
 
 function fsActive() {
   return !!(document.body && document.body.classList.contains('cq-fs'));
@@ -166,46 +155,7 @@ function setFullscreen(on) {
 }
 
 function toggleFullscreen() {
-  if (fsActive()) {
-    if (fsNative && fsElement()) {
-      const exit = document.exitFullscreen || document.webkitExitFullscreen;
-      if (exit) {
-        try {
-          const p = exit.call(document);
-          if (p && typeof p.catch === 'function') p.catch(() => { /* no-op */ });
-        } catch (_) { /* no-op */ }
-      }
-    }
-    fsNative = false;
-    setFullscreen(false);
-    return;
-  }
-
-  const host = cabinet || canvas;
-  const req = host && (host.requestFullscreen || host.webkitRequestFullscreen);
-  if (req) {
-    try {
-      const p = req.call(host, { navigationUI: 'hide' });
-      fsNative = true;
-      // A rejected request (iframe policy, a lost gesture) simply leaves the
-      // CSS-only mode standing, which is a perfectly good fullscreen.
-      if (p && typeof p.catch === 'function') p.catch(() => { fsNative = false; });
-    } catch (_) {
-      fsNative = false;
-    }
-  }
-  setFullscreen(true);
-}
-
-function onFsChange() {
-  // Esc, the Android back gesture and the browser's own exit affordance all
-  // leave native fullscreen without going through the button. Follow them out.
-  if (fsNative && !fsElement()) {
-    fsNative = false;
-    setFullscreen(false);
-  } else {
-    relayout();
-  }
+  setFullscreen(!fsActive());
 }
 
 function initFullscreenButton() {
@@ -214,8 +164,6 @@ function initFullscreenButton() {
   fsBtn.hidden = false;
   fsBtn.addEventListener('click', toggleFullscreen);
   syncFsButton(false);
-  document.addEventListener('fullscreenchange', onFsChange);
-  document.addEventListener('webkitfullscreenchange', onFsChange);
   if (typeof window !== 'undefined' && window.screen && window.screen.orientation
       && typeof window.screen.orientation.addEventListener === 'function') {
     // Rotating a phone changes the picture box without always firing `resize`.
@@ -379,12 +327,15 @@ function update(dt) {
   if (!game) return;
   pumpEdges();
   if (input.anyPressed) unlockAudio();
+  // Lets the UI layer label prompts with buttons the player can see, without
+  // giving the DOM-free renderer a way to ask the DOM anything.
+  game.touchControls = touchControlsActive();
 
   handleInput();
 
-  // Ability unlock toast, raised the frame the completion card appears.
+  // The completion card now spends a whole page on a new ability, so the old
+  // three-second toast over its header is redundant — keep only the fanfare.
   if (game.unlockPending && game.phase === 'levelComplete') {
-    showToast(game, 'ABILITY UNLOCKED — ' + game.unlockPending, null);
     pushSfx(game, 'unlock');
     game.unlockPending = null;
   }
