@@ -29,3 +29,9 @@ npm-debug.log*
 scratchpad/
 tmp/
 coverage/
+
+# brainstorm mockups
+.superpowers/
+
+# local design tooling (Impeccable)
+.claude/
